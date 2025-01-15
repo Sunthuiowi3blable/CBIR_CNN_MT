@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Image Search</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #9c27b0;
+            --secondary-color: #f3e5f5;
+            --accent-color: #e91e63;
+            --text-color: #4a148c;
+            --gradient: linear-gradient(135deg, #9c27b0, #e91e63);
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: var(--secondary-color);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .search-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2.5rem;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(156, 39, 176, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .header h1 {
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+
+        .upload-area {
+            border: 3px dashed #ce93d8;
+            border-radius: 20px;
+            padding: 3.5rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            background: var(--secondary-color);
+            margin-bottom: 2.5rem;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(233, 30, 99, 0.15);
+        }
+
+        .upload-area i {
+            font-size: 3.5rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-area.dragging {
+            background: #f8bbd0;
+            border-color: var(--accent-color);
+        }
+
+        .preview-container {
+            max-width: 450px;
+            margin: 2.5rem auto;
+            text-align: center;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(156, 39, 176, 0.15);
+            display: none;
+        }
+
+        .search-btn {
+            background: var(--gradient);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.4s ease;
+            display: none;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(233, 30, 99, 0.3);
+        }
+
+        .search-btn:disabled {
+            background: #e0e0e0;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2.5rem;
+            margin-top: 3.5rem;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(156, 39, 176, 0.1);
+            transition: transform 0.4s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(233, 30, 99, 0.2);
+        }
+
+        .result-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+        }
+
+        .result-info {
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .similarity-score {
+            background: var(--gradient);
+            color: white;
+            padding: 0.5rem 1.2rem;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .file-info {
+            margin-top: 0.8rem;
+            font-size: 0.95rem;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        .animate-pulse {
+            animation: pulse 2.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <div class="header">
+            <h1>Intelligent Image Search</h1>
+            <p class="text-muted">Discover visually similar images using advanced AI technology</p>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <i class="fas fa-cloud-upload-alt animate-pulse"></i>
+            <h4 class="mt-3">Drag & Drop your image here</h4>
+            <p class="text-muted">or click to browse your files</p>
+            <input type="file" id="imageInput" accept="image/*" class="d-none">
+            <div class="file-info mt-2">Accepted formats: JPG, PNG, JPEG</div>
+        </div>
+
+        <div class="preview-container">
+            <img id="imagePreview" class="preview-image" alt="Preview">
+            <button id="searchButton" class="search-btn mt-4">
+                <span class="spinner-border spinner-border-sm loading-spinner" role="status"></span>
+                Search Similar Images
+            </button>
+        </div>
+
+        <div id="results" class="results-grid"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const searchButton = document.getElementById('searchButton');
+        const resultsDiv = document.getElementById('results');
+        const loadingSpinner = document.querySelector('.loading-spinner');
+
+        uploadArea.addEventListener('click', () => imageInput.click());
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragging');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragging');
+            });
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                imageInput.files = e.dataTransfer.files;
+                handleImageSelect(file);
+            }
+        });
+
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleImageSelect(file);
+        });
+
+        function handleImageSelect(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+                searchButton.style.display = 'inline-block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        searchButton.addEventListener('click', async () => {
+            const file = imageInput.files[0];
+            if (!file) {
+                alert('Please select an image first');
+                return;
+            }
+
+            searchButton.disabled = true;
+            loadingSpinner.style.display = 'inline-block';
+            resultsDiv.innerHTML = '';
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                displayResults(data.results);
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                searchButton.disabled = false;
+                loadingSpinner.style.display = 'none';
+            }
+        });
+
+        function displayResults(results) {
+            resultsDiv.innerHTML = results.map(result => `
+                <div class="result-card">
+                    <img src="data:image/jpeg;base64,${result.image}"
+                         class="result-image"
+                         alt="Similar image">
+                    <div class="result-info">
+                        <div class="similarity-score">
+                            ${(result.score * 100).toFixed(1)}% Match
+                        </div>
+                        <div class="file-info mt-2">
+                            ${result.path.split('/').pop()}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
